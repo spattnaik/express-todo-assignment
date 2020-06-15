@@ -2,11 +2,13 @@ const TodoItem = require('../models/todo-model');
 
 const getList = async (req, resp, next) => {
     try {
-        const response = await TodoItem.find();
+        const includeDone = req.query.includeDone == 1? true: false;
+        const filter = includeDone? {}: {done: false};
+        const response = await TodoItem.find(filter);
         resp.status(200).send({
             success: true,
             data: response
-        })
+        });
     } catch (err) {
         resp.status(500).send({
             success: false,
@@ -23,7 +25,9 @@ const createItem = async (req, resp, next) => {
     }
     const todo = {
         title: req.body.title,
-        isCompleted: false,
+        description: req.body.description,
+        dueDate: new Date(req.body.dueDate),
+        done: false,
     }
     const todoModel = new TodoItem(todo);
     try {
@@ -51,7 +55,9 @@ const updateItem = async (req, resp, next) => {
 
     const updatedTodo = {
         title: req.body.title,
-        isCompleted: req.body.isCompleted === 'true' ? true : false,
+        description: req.body.description,
+        dueDate: new Date(req.body.dueDate),
+        done: req.body.done === 'true' ? true : false,
     }
     try {
         const response = await TodoItem.findOneAndUpdate({
@@ -113,6 +119,15 @@ const validateTodo = (todo) => {
           success: false,
           message: 'title is required'
         };
+    }
+    if(todo.dueDate) {
+        const dueDate = new Date(todo.dueDate);
+        if(!(dueDate instanceof Date && !isNaN(dueDate))) {
+            return {
+                success: false,
+                message: 'due date should be a proper date'
+              };
+        }
     }
     return {
         success: true,
